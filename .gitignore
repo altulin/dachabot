@@ -9,6 +9,7 @@
 *.exe
 *.rar
 node_modules/
+config/
 public/
 npm-debug.*
 src/css/style.css
