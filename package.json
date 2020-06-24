@@ -2,12 +2,13 @@
   "name": "folder",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dacha.js",
   "dependencies": {
     "node-telegram-bot-api": "^0.50.0"
   },
   "devDependencies": {
-    "config": "^3.3.1"
+    "config": "^3.3.1",
+    "onoff": "^6.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
