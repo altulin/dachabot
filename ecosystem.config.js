@@ -5,7 +5,7 @@ module.exports = {
       script: 'dacha.js',
       disable_logs: true,
       watch: ['dachabot'],
-      ignore_watch: ['node_modules']
+      ignore_watch: ['node_modules', 'values.json']
     }
   ],
 
