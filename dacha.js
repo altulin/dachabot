@@ -7,12 +7,14 @@ const fs = require('fs');
 const SunCalc = require('suncalc');
 const Gpio = require('onoff').Gpio;
 
-const rpisensor = '28-0416c27bdcff';
-const streetsensor = '28-00044e0b9fff';
-const housesensor = '28-0114504f0cff';
+const rpisensor = config.get("sensors.rpi");
+const streetsensor = config.get("sensors.street");
+const housesensor = config.get("sensors.house");
 const token = config.get("token");
 
-const user_id = Object.values(config.get("user_id"))
+
+const user_id = Object.values(config.get("user_id"));
+const al_id = config.get("user_id.al_id");
 
 //const heatingrpi = new Gpio(17, 'out');//обогрев бокса
 const lampexit = new Gpio(18, 'out');//лампа вход
@@ -26,17 +28,14 @@ const keyboard_lampexit_off= {"inline_keyboard": [[{"text": "выключить"
 const keyboard_house_on= {"inline_keyboard": [[{"text": "включить", "callback_data": "house_on"}]]}
 const keyboard_house_off= {"inline_keyboard": [[{"text": "выключить", "callback_data": "house_off"}]]}
 
-
-
-
 //house.write(1);
 
 function sun() {
-	let sun = SunCalc.getTimes(new Date(), 52.2, 104.4, 400);
+	let sun = SunCalc.getTimes(Date(), 52.2, 104.4, 400);
 	console.log(sun);
 }
 
-// sun();
+sun();
 
 function turn() {
 	(file.get("lampexit_state") === "0") ? lampexit.write(0):lampexit.write(1);
@@ -82,7 +81,7 @@ bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "Выбери нужный пункт: " + "\u{1F447}", {"reply_markup": keyboard_main});
 });
 
-bot.sendMessage(87307445, "Привет! Я включилась!", {"reply_markup": keyboard_main})
+bot.sendMessage(al_id, "Привет! Я включилась!", {"reply_markup": keyboard_main})
 
 bot.on('message', (msg) => {
   let chatId = msg.chat.id;
@@ -100,8 +99,11 @@ bot.on('message', (msg) => {
 	  }
 
 	if (text.includes("\u{2699}")) {
-		bot.sendMessage(chatId, "Внутри щита: "+temp(rpisensor)+" °C", {"reply_markup": keyboard_main})
+		bot.sendMessage(chatId, "Оборудование: "+temp(rpisensor)+" °C", {"reply_markup": keyboard_main})
 	}
+  }
+  else {
+  	bot.sendMessage(al_id, "Кто-то чужой!");
   }
 });
 
