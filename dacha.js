@@ -2,6 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const config = require('config');
 const editJsonFile = require("edit-json-file");
 const file = editJsonFile("values.json");
+var CronJob = require('cron').CronJob;
 const sensor = require('ds18b20-raspi');
 const fs = require('fs');
 const SunCalc = require('suncalc');
@@ -15,6 +16,11 @@ const token = config.get("token");
 
 const user_id = Object.values(config.get("user_id"));
 const al_id = config.get("user_id.al_id");
+
+const latitude = config.get("sun.latitude")
+const longitude = config.get("sun.longitude")
+const land = config.get("sun.height")
+ 
 
 //const heatingrpi = new Gpio(17, 'out');//обогрев бокса
 const lampexit = new Gpio(18, 'out');//лампа вход
@@ -31,11 +37,35 @@ const keyboard_house_off= {"inline_keyboard": [[{"text": "выключить", "
 //house.write(1);
 
 function sun() {
-	let sun = SunCalc.getTimes(Date(), 52.2, 104.4, 400);
-	console.log(sun);
+	let times = SunCalc.getTimes(new Date(), latitude, longitude, land);
+	let sunrise_hours = times.dawn.getHours();
+	let sunrise_min = times.dawn.getMinutes();
+	let sunset_hours = times.dusk.getHours();
+	let sunset_min = times.dusk.getMinutes();
+	
+	let job_rise = new CronJob('0 ' + sunrise_min + ' ' + sunrise_hours + ' * * *', function() {
+		bot.sendMessage(al_id,'восход');
+		lampexit.writeSync(0);
+		record("lampexit_state", 0)
+	}, null, true, 'Asia/Irkutsk');
+
+	let job_set = new CronJob('0 ' + sunset_min + ' ' + sunset_hours + ' * * *', function() {
+		bot.sendMessage(al_id,'заход')
+		lampexit.writeSync(1);
+		record("lampexit_state", 1);
+	}, null, true, 'Asia/Irkutsk');
+
+}
+
+function day() {
+	let sun_day = new CronJob('0 0 12 * * *', function() {
+		sun();
+		bot.sendMessage(al_id,'sun')
+	}, null, true, 'Asia/Irkutsk')
 }
 
 sun();
+day();
 
 function turn() {
 	(file.get("lampexit_state") === "0") ? lampexit.write(0):lampexit.write(1);
@@ -103,7 +133,13 @@ bot.on('message', (msg) => {
 	}
   }
   else {
+  	if (text.includes("Улица")) {
+  		bot.sendMessage(chatId, "На улице: "+temp(streetsensor)+" °C", {"reply_markup": keyboard_main})
+		bot.sendMessage(chatId, checkGpio(lampexit, "Освещение на улице"));
+	}
+
   	bot.sendMessage(al_id, "Кто-то чужой!");
+  	bot.sendMessage(al_id, text);
   }
 });
 
