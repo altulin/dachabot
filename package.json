@@ -4,12 +4,14 @@
   "description": "",
   "main": "dacha.js",
   "dependencies": {
+    "cron": "^1.8.2",
     "edit-json-file": "^1.4.0",
+    "lodash": "^4.17.19",
+    "node-fetch": "^2.6.0",
     "node-telegram-bot-api": "^0.50.0"
   },
   "devDependencies": {
     "config": "^3.3.1",
-    "cron": "^1.8.2",
     "ds18b20-raspi": "^0.3.4",
     "onoff": "^6.0.0",
     "suncalc": "^1.8.0"

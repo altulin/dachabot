@@ -3,19 +3,24 @@ const config = require('config');
 const editJsonFile = require("edit-json-file");
 const file = editJsonFile("values.json");
 var CronJob = require('cron').CronJob;
+var CronTime = require('cron').CronTime;
 const sensor = require('ds18b20-raspi');
 const fs = require('fs');
 const SunCalc = require('suncalc');
 const Gpio = require('onoff').Gpio;
+//const fetch = require("node-fetch");
 
 const rpisensor = config.get("sensors.rpi");
 const streetsensor = config.get("sensors.street");
 const housesensor = config.get("sensors.house");
 const token = config.get("token");
+const city = config.get("city");
+const key = config.get("key");
 
 
 const user_id = Object.values(config.get("user_id"));
 const al_id = config.get("user_id.al_id");
+// const al_id = 87307445;
 
 const latitude = config.get("sun.latitude")
 const longitude = config.get("sun.longitude")
@@ -28,44 +33,95 @@ const house = new Gpio(15, 'out');//обогрев дом
 const bot = new TelegramBot(token, {polling: true});
 
 const keyboard_main = {"keyboard": [["\u{1F3E1}"+ " Дом", "\u{1F332}"+" Улица", "\u{2699}"]], resize_keyboard: true}
-const keyboard_lampexit_on= {"inline_keyboard": [[{"text": "включить", "callback_data": "lampexit_on"}]]}
-const keyboard_lampexit_off= {"inline_keyboard": [[{"text": "выключить", "callback_data": "lampexit_off"}]]}
+// const keyboard_main = {"keyboard": [
+// 		["\u{1F3E1}"+ " Дом"],
+// 		["\u{1F332}"+" Улица"],
+// 		["\u{2699}"]
+// 	], resize_keyboard: true}
 
-const keyboard_house_on= {"inline_keyboard": [[{"text": "включить", "callback_data": "house_on"}]]}
-const keyboard_house_off= {"inline_keyboard": [[{"text": "выключить", "callback_data": "house_off"}]]}
+const keyboard_lampexit_on= {"inline_keyboard": [
+		[{"text": "\u{1F4A1} " + "включить", "callback_data": "lampexit_on"}]
+	]}
+	
+const keyboard_lampexit_off= {"inline_keyboard": [
+		[{"text": "\u{1F4A1} " + "выключить", "callback_data": "lampexit_off"}]
+	]}
 
-//house.write(1);
+const keyboard_house_on= {"inline_keyboard": [[{"text": "\u{2668} " + "включить", "callback_data": "house_on"}]]}
+const keyboard_house_off= {"inline_keyboard": [[{"text": "\u{2668} " + "выключить", "callback_data": "house_off"}]]}
+
+function temppi() {
+	var temperature = fs.readFileSync("/sys/class/thermal/thermal_zone0/temp");
+	temperature = ((temperature/1000).toPrecision(3));
+	return temperature
+}
+
+function salutation() {
+	bot.sendMessage(al_id, "Привет! Я включилась!", {"reply_markup": keyboard_main})
+}
+setTimeout(salutation, 60000);
+
+async function weather(id) {
+	//http://api.openweathermap.org/data/2.5/forecast/hourly?q=Irkutsk&appid=be87acba5a29f3aa93bd105c748ae943
+	let response = await fetch("http://api.openweathermap.org/data/2.5/forecast/hourly?q=" + city + "&appid=" + key, {metod: "post"});
+	// console.log(response.ok)
+	if (response.ok) {
+		let json = await response.json();
+		console.log(json);
+		//bot.sendMessage(id, json);
+	}
+
+	else {
+		console.log("oops");
+	}
+}
+
+//weather();
+let job_set;
+let job_rise;
+let times;
+let sunrise_hours;
+let sunrise_min;
+let sunset_hours;
+let sunset_min;
 
 function sun() {
-	let times = SunCalc.getTimes(new Date(), latitude, longitude, land);
-	let sunrise_hours = times.dawn.getHours();
-	let sunrise_min = times.dawn.getMinutes();
-	let sunset_hours = times.dusk.getHours();
-	let sunset_min = times.dusk.getMinutes();
+	times = SunCalc.getTimes(new Date(), latitude, longitude, land);
+	sunrise_hours = times.dawn.getHours();
+	sunrise_min = times.dawn.getMinutes();
+	sunset_hours = times.dusk.getHours();
+	sunset_min = times.dusk.getMinutes();
 	
-	let job_rise = new CronJob('0 ' + sunrise_min + ' ' + sunrise_hours + ' * * *', function() {
-		bot.sendMessage(al_id,'восход');
+	job_rise = new CronJob('0 ' + sunrise_min + ' ' + sunrise_hours + ' * * *', function() {
+		bot.sendMessage(al_id,'Освещение выкл', {"reply_markup": keyboard_main});
 		lampexit.writeSync(0);
-		record("lampexit_state", 0)
-	}, null, true, 'Asia/Irkutsk');
+		record("lampexit_state", 0);
+	}, null, true, 'Asia/'+city);
 
-	let job_set = new CronJob('0 ' + sunset_min + ' ' + sunset_hours + ' * * *', function() {
-		bot.sendMessage(al_id,'заход')
+	job_set = new CronJob('0 ' + sunset_min + ' ' + sunset_hours + ' * * *', function() {
+		bot.sendMessage(al_id,'Освещение вкл', {"reply_markup": keyboard_main})
 		lampexit.writeSync(1);
 		record("lampexit_state", 1);
-	}, null, true, 'Asia/Irkutsk');
-
+	}, null, true, 'Asia/'+city);
 }
 
-function day() {
-	let sun_day = new CronJob('0 0 12 * * *', function() {
-		sun();
-		bot.sendMessage(al_id,'sun')
-	}, null, true, 'Asia/Irkutsk')
-}
+function sun_correction() {
+	let sun_day = new CronJob('0 0 * * * *', function() {
+		times = SunCalc.getTimes(new Date(), latitude, longitude, land);
+		sunrise_hours = times.dawn.getHours();
+		sunrise_min = times.dawn.getMinutes();
+		sunset_hours = times.dusk.getHours();
+		sunset_min = times.dusk.getMinutes();
 
-sun();
-day();
+		let time_rise = new CronTime('0 ' + sunrise_min + ' ' + sunrise_hours + ' * * *');
+		job_rise.setTime(time_rise);
+		job_rise.start();
+
+		let time_set = new CronTime('0 ' + sunset_min + ' ' + sunset_hours + ' * * *');
+		job_set.setTime(time_set);
+		job_set.start();
+	}, null, true, 'Asia/'+city);
+}
 
 function turn() {
 	(file.get("lampexit_state") === "0") ? lampexit.write(0):lampexit.write(1);
@@ -99,47 +155,75 @@ function toggleGpio(arg, name, namestate) {
 }
 
 function checkGpio(arg, name) {
-	let msg
+	var msg
 	(arg.readSync() === 0)?msg = name + " выкл.":msg = name + " вкл. ";
 	return msg;
 }
 
 turn();
-
+sun();
+sun_correction();
 
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "Выбери нужный пункт: " + "\u{1F447}", {"reply_markup": keyboard_main});
 });
 
-bot.sendMessage(al_id, "Привет! Я включилась!", {"reply_markup": keyboard_main})
-
 bot.on('message', (msg) => {
-  let chatId = msg.chat.id;
+  let chatId = msg.from.id;
+  let username = msg.from.username;
   let text = msg.text;
 
   if (user_id.toString().includes(chatId)) {
   	if (text.includes("Улица")) {
-  		bot.sendMessage(chatId, "На улице: "+temp(streetsensor)+" °C", {"reply_markup": keyboard_main})
-		bot.sendMessage(chatId, checkGpio(lampexit, "Освещение на улице"), {"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off});
+		bot.sendMessage(
+			chatId, 
+			"\u{1F332} " + "Улица" +"\n" +
+			"=================" + "\n" +
+			"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
+			checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
+			{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off}
+		);
 	}
 
 	if (text.includes("Дом")) {
-		bot.sendMessage(chatId, "В доме: "+temp(housesensor)+" °C", {"reply_markup": keyboard_main})
-	  	bot.sendMessage(chatId, checkGpio(house, "Отопление в доме"), {"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off});
-	  }
+		bot.sendMessage(
+			chatId, 
+			"\u{1F3E1} " + "Дом" + "\n" +
+			"=================" + "\n" +
+			"\u{1F321} " + temp(housesensor) + " °C" +  "\n" + 
+			checkGpio(house, "\u{2668} " + "отопление"),
+			{"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off}
+		);
+	}
 
 	if (text.includes("\u{2699}")) {
-		bot.sendMessage(chatId, "Оборудование: "+temp(rpisensor)+" °C", {"reply_markup": keyboard_main})
+		bot.sendMessage(
+			chatId, 
+			"\u{2699} " + "RPi" + "\n" +
+			"=================" + "\n" +
+			"\u{1F321} " + temp(rpisensor)+" °C" + "\n" + 
+			"\u{1F4BB} " + temppi() +" °C",
+			{"reply_markup": keyboard_main}
+		);
 	}
   }
   else {
   	if (text.includes("Улица")) {
-  		bot.sendMessage(chatId, "На улице: "+temp(streetsensor)+" °C", {"reply_markup": keyboard_main})
-		bot.sendMessage(chatId, checkGpio(lampexit, "Освещение на улице"));
+  		bot.sendMessage(chatId, 
+  			"\u{1F332} " + "Улица" +"\n" +
+			"=================" + "\n" +
+			"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
+			checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
+  			{"reply_markup": keyboard_main}
+  		);
 	}
 
-  	bot.sendMessage(al_id, "Кто-то чужой!");
-  	bot.sendMessage(al_id, text);
+  	bot.sendMessage(al_id, 
+  		"Кто-то чужой!" + "\n" +
+  		"сообщение: " + text + "\n" +
+  		"id: " + chatId + "\n" +
+  		"user: " + ((username)?"@" + username:"no name " + "\u{1F636}"),
+  		{"reply_markup": keyboard_main});
   }
 });
 
@@ -155,6 +239,10 @@ bot.on("callback_query", (msg) => {
 	if (answer_ls.includes(("house"))) {
 		bot.sendMessage(id, toggleGpio(house, "Отопление в доме", "house_state"), {"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off});
 	}
+
+	// if (answer.includes("weather")) {
+	// 	weather(id);
+	// }
 	
 })
 
