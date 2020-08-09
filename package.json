@@ -8,7 +8,8 @@
     "edit-json-file": "^1.4.0",
     "lodash": "^4.17.19",
     "node-fetch": "^2.6.0",
-    "node-telegram-bot-api": "^0.50.0"
+    "node-telegram-bot-api": "^0.50.0",
+    "reboot": "^0.1.0"
   },
   "devDependencies": {
     "config": "^3.3.1",

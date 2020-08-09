@@ -9,6 +9,7 @@ const fs = require('fs');
 const SunCalc = require('suncalc');
 const Gpio = require('onoff').Gpio;
 //const fetch = require("node-fetch");
+const reboot = require('reboot');
 
 const rpisensor = config.get("sensors.rpi");
 const streetsensor = config.get("sensors.street");
@@ -33,12 +34,6 @@ const house = new Gpio(15, 'out');//обогрев дом
 const bot = new TelegramBot(token, {polling: true});
 
 const keyboard_main = {"keyboard": [["\u{1F3E1}"+ " Дом", "\u{1F332}"+" Улица", "\u{2699}"]], resize_keyboard: true}
-// const keyboard_main = {"keyboard": [
-// 		["\u{1F3E1}"+ " Дом"],
-// 		["\u{1F332}"+" Улица"],
-// 		["\u{2699}"]
-// 	], resize_keyboard: true}
-
 const keyboard_lampexit_on= {"inline_keyboard": [
 		[{"text": "\u{1F4A1} " + "включить", "callback_data": "lampexit_on"}]
 	]}
@@ -50,6 +45,8 @@ const keyboard_lampexit_off= {"inline_keyboard": [
 const keyboard_house_on= {"inline_keyboard": [[{"text": "\u{2668} " + "включить", "callback_data": "house_on"}]]}
 const keyboard_house_off= {"inline_keyboard": [[{"text": "\u{2668} " + "выключить", "callback_data": "house_off"}]]}
 
+const keyboard_water = {"inline_keyboard": [[{"text": "счетчики", "callback_data": "counter"}]]}
+
 function temppi() {
 	var temperature = fs.readFileSync("/sys/class/thermal/thermal_zone0/temp");
 	temperature = ((temperature/1000).toPrecision(3));
@@ -59,6 +56,7 @@ function temppi() {
 function salutation() {
 	bot.sendMessage(al_id, "Привет! Я включилась!", {"reply_markup": keyboard_main})
 }
+
 setTimeout(salutation, 60000);
 
 async function weather(id) {
@@ -175,55 +173,62 @@ bot.on('message', (msg) => {
 
   if (user_id.toString().includes(chatId)) {
   	if (text.includes("Улица")) {
-		bot.sendMessage(
-			chatId, 
-			"\u{1F332} " + "Улица" +"\n" +
-			"=================" + "\n" +
-			"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
-			checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
-			{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off}
-		);
-	}
+			bot.sendMessage(
+				chatId, 
+				"\u{1F332} " + "Улица" +"\n" +
+				"=================" + "\n" +
+				"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
+				checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
+				{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off}
+			);
+		}
 
-	if (text.includes("Дом")) {
-		bot.sendMessage(
-			chatId, 
-			"\u{1F3E1} " + "Дом" + "\n" +
-			"=================" + "\n" +
-			"\u{1F321} " + temp(housesensor) + " °C" +  "\n" + 
-			checkGpio(house, "\u{2668} " + "отопление"),
-			{"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off}
-		);
-	}
+		if (text.includes("Дом")) {
+			bot.sendMessage(
+				chatId, 
+				"\u{1F3E1} " + "Дом" + "\n" +
+				"=================" + "\n" +
+				"\u{1F321} " + temp(housesensor) + " °C" +  "\n" + 
+				checkGpio(house, "\u{2668} " + "отопление"),
+				{"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off}
+			);
+		}
 
-	if (text.includes("\u{2699}")) {
-		bot.sendMessage(
-			chatId, 
-			"\u{2699} " + "RPi" + "\n" +
-			"=================" + "\n" +
-			"\u{1F321} " + temp(rpisensor)+" °C" + "\n" + 
-			"\u{1F4BB} " + temppi() +" °C",
-			{"reply_markup": keyboard_main}
-		);
-	}
+		if (text.includes("\u{2699}")) {
+			bot.sendMessage(
+				chatId, 
+				"\u{2699} " + "RPi" + "\n" +
+				"=================" + "\n" +
+				"\u{1F321} " + temp(rpisensor)+" °C" + "\n" + 
+				"\u{1F4BB} " + temppi() +" °C",
+				{"reply_markup": keyboard_water}
+			);
+		}
+
+		if (text ==='r') {
+			bot.sendMessage(chatId, 'Ок! Перезагружаюсь!', {"reply_markup": keyboard_main});
+			setTimeout(reboot.rebootImmediately, 60000);
+		}
   }
+
   else {
   	if (text.includes("Улица")) {
   		bot.sendMessage(chatId, 
-  			"\u{1F332} " + "Улица" +"\n" +
-			"=================" + "\n" +
-			"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
-			checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
+	  		"\u{1F332} " + "Улица" +"\n" +
+				"=================" + "\n" +
+				"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
+				checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
   			{"reply_markup": keyboard_main}
   		);
-	}
+		}
 
   	bot.sendMessage(al_id, 
-  		"Кто-то чужой!" + "\n" +
+  		"У нас гости!" + "\n" +
   		"сообщение: " + text + "\n" +
   		"id: " + chatId + "\n" +
   		"user: " + ((username)?"@" + username:"no name " + "\u{1F636}"),
-  		{"reply_markup": keyboard_main});
+  		{"reply_markup": keyboard_main}
+  	);
   }
 });
 
@@ -233,16 +238,22 @@ bot.on("callback_query", (msg) => {
 	let answer_ls = answer.split("_");
 
 	if (answer_ls.includes(("lampexit"))) {
-		bot.sendMessage(id, toggleGpio(lampexit, "Освещение на улице", "lampexit_state"), {"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off});
+		bot.sendMessage(id, 
+			toggleGpio(lampexit, "Освещение на улице", "lampexit_state"), 
+			{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off});
 	}
 
 	if (answer_ls.includes(("house"))) {
-		bot.sendMessage(id, toggleGpio(house, "Отопление в доме", "house_state"), {"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off});
+		bot.sendMessage(id, 
+			toggleGpio(house, "Отопление в доме", "house_state"), 
+			{"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off}
+		);
 	}
 
-	// if (answer.includes("weather")) {
-	// 	weather(id);
-	// }
+	if (answer.includes('counter')) {
+		bot.sendMessage(id, 'Передай показания ХВС ГВС через пробел', {"reply_markup": keyboard_main})
+		bot.sendMessage(id, 'ХВС ГВС', {"reply_markup": {force_reply: true}})
+	}
 	
 })
 
