@@ -18,7 +18,6 @@ const token = config.get("token");
 const city = config.get("city");
 const key = config.get("key");
 
-
 const user_id = Object.values(config.get("user_id"));
 const al_id = config.get("user_id.al_id");
 // const al_id = 87307445;
@@ -28,7 +27,7 @@ const longitude = config.get("sun.longitude")
 const land = config.get("sun.height")
  
 
-//const heatingrpi = new Gpio(17, 'out');//обогрев бокса
+const heatingrpi = new Gpio(17, 'out');//обогрев бокса
 const lampexit = new Gpio(18, 'out');//лампа вход
 const house = new Gpio(15, 'out');//обогрев дом
 const bot = new TelegramBot(token, {polling: true});
@@ -45,7 +44,15 @@ const keyboard_lampexit_off= {"inline_keyboard": [
 const keyboard_house_on= {"inline_keyboard": [[{"text": "\u{2668} " + "включить", "callback_data": "house_on"}]]}
 const keyboard_house_off= {"inline_keyboard": [[{"text": "\u{2668} " + "выключить", "callback_data": "house_off"}]]}
 
-const keyboard_water = {"inline_keyboard": [[{"text": "счетчики", "callback_data": "counter"}]]}
+const keyboard_water_on = {"inline_keyboard": [
+													[{"text": "\u{2668} " + "включить обогрев", "callback_data": "heating_on"}],
+													[{"text": "счетчики", "callback_data": "counter"}]
+												]}
+
+const keyboard_water_off = {"inline_keyboard": [
+													[{"text": "\u{2668} " + "выключить обогрев", "callback_data": "heating_off"}],
+													[{"text": "счетчики", "callback_data": "counter"}]
+												]}
 
 function temppi() {
 	var temperature = fs.readFileSync("/sys/class/thermal/thermal_zone0/temp");
@@ -68,7 +75,6 @@ async function weather(id) {
 		console.log(json);
 		//bot.sendMessage(id, json);
 	}
-
 	else {
 		console.log("oops");
 	}
@@ -121,9 +127,11 @@ function sun_correction() {
 	}, null, true, 'Asia/'+city);
 }
 
+
 function turn() {
 	(file.get("lampexit_state") === "0") ? lampexit.write(0):lampexit.write(1);
 	(file.get("house_state") === "0") ? house.write(0):house.write(1);
+	(file.get("heatingrpi_state") === "0") ? heatingrpi.write(0):heatingrpi.write(1);
 }
 
 function record(arg, data) {
@@ -161,6 +169,9 @@ function checkGpio(arg, name) {
 turn();
 sun();
 sun_correction();
+
+// bot.on("polling_error", (err) => console.log(err));
+// bot.on("polling_error", (err) => bot.sendMessage(al_id, err));
 
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "Выбери нужный пункт: " + "\u{1F447}", {"reply_markup": keyboard_main});
@@ -200,14 +211,19 @@ bot.on('message', (msg) => {
 				"\u{2699} " + "RPi" + "\n" +
 				"=================" + "\n" +
 				"\u{1F321} " + temp(rpisensor)+" °C" + "\n" + 
-				"\u{1F4BB} " + temppi() +" °C",
-				{"reply_markup": keyboard_water}
+				"\u{1F4BB} " + temppi() +" °C" + "\n" +
+				checkGpio(heatingrpi, "\u{2668} " + "обогрев щита"),
+				{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off}
 			);
 		}
 
 		if (text ==='r') {
 			bot.sendMessage(chatId, 'Ок! Перезагружаюсь!', {"reply_markup": keyboard_main});
 			setTimeout(reboot.rebootImmediately, 60000);
+		}
+
+		if (text ==='test') {
+			//bot.sendMessage(al_id, bot.getMe())
 		}
   }
 
@@ -250,11 +266,17 @@ bot.on("callback_query", (msg) => {
 		);
 	}
 
+	if (answer_ls.includes(("heating"))) {
+		bot.sendMessage(id, 
+			toggleGpio(heatingrpi, "Обогрев щита", "heatingrpi_state"),
+			{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off}
+		);
+	}
+
 	if (answer.includes('counter')) {
 		bot.sendMessage(id, 'Передай показания ХВС ГВС через пробел', {"reply_markup": keyboard_main})
 		bot.sendMessage(id, 'ХВС ГВС', {"reply_markup": {force_reply: true}})
 	}
-	
 })
 
 

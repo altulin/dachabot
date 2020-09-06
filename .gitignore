@@ -15,3 +15,4 @@ npm-debug.*
 src/css/style.css
 src/css/*.map
 Thumbs.db
+core
