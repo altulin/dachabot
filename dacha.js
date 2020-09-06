@@ -46,12 +46,12 @@ const keyboard_house_off= {"inline_keyboard": [[{"text": "\u{2668} " + "выкл
 
 const keyboard_water_on = {"inline_keyboard": [
 													[{"text": "\u{2668} " + "включить обогрев", "callback_data": "heating_on"}],
-													[{"text": "счетчики", "callback_data": "counter"}]
+													[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
 												]}
 
 const keyboard_water_off = {"inline_keyboard": [
 													[{"text": "\u{2668} " + "выключить обогрев", "callback_data": "heating_off"}],
-													[{"text": "счетчики", "callback_data": "counter"}]
+													[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
 												]}
 
 function temppi() {
@@ -225,6 +225,26 @@ bot.on('message', (msg) => {
 		if (text ==='test') {
 			//bot.sendMessage(al_id, bot.getMe())
 		}
+
+		if (msg.reply_to_message) {
+			if (msg.reply_to_message.text.includes("Передай показания ХВС ГВС через пробел")) {
+				if (text.split(' ').length === 2) {
+					bot.sendMessage(chatId, 
+						'Показания счетчиков' + "\n" +
+						config.get("addr") + "\n" +
+						config.get("name") + "\n" +
+						'ХВС: ' +  text.split(' ')[0] + "\n" +
+						'ГВС: ' + text.split(' ')[1],
+						{"reply_markup": keyboard_main})
+				}
+				
+				else {
+					bot.sendMessage(chatId, '\u{1f61b} ' + 'Попробуй ещё раз',
+						{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off});
+				}
+			}
+			
+		}
   }
 
   else {
@@ -236,6 +256,22 @@ bot.on('message', (msg) => {
 				checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
   			{"reply_markup": keyboard_main}
   		);
+		}
+
+		if (text.includes("Дом")) {
+			bot.sendMessage(chatId,
+				"\u{26d4} " + "\u{26d4} " + "\u{26d4} " + "\u{26d4} " + "\u{26d4} " + "\n" +
+				"=================" + "\n" +
+				'Здесь находится меню для управления отоплением дома',
+				{"reply_markup": keyboard_main})
+		}
+
+		if (text.includes("\u{2699}")) {
+			bot.sendMessage(chatId,
+				"\u{26d4} " + "\u{26d4} " + "\u{26d4} " + "\u{26d4} " + "\u{26d4} " + "\n" +
+				"=================" + "\n" +
+				'Здесь находится меню для мониторинга работы оборудования',
+				{"reply_markup": keyboard_main})
 		}
 
   	bot.sendMessage(al_id, 
@@ -274,8 +310,7 @@ bot.on("callback_query", (msg) => {
 	}
 
 	if (answer.includes('counter')) {
-		bot.sendMessage(id, 'Передай показания ХВС ГВС через пробел', {"reply_markup": keyboard_main})
-		bot.sendMessage(id, 'ХВС ГВС', {"reply_markup": {force_reply: true}})
+		bot.sendMessage(id, 'Передай показания ХВС ГВС через пробел', {"reply_markup": {force_reply: true}})
 	}
 })
 
