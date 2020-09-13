@@ -3,8 +3,9 @@ module.exports = {
     {
       name: 'dacha',
       script: 'dacha.js',
+      out_file: "/dev/null",
+  		error_file: "/dev/null",
       max_memory_restart: '100M',
-      instances: -1,
       watch: true,
       ignore_watch: ['node_modules', '/home/pi/dachabot/values.json']
     }

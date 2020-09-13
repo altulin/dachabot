@@ -9,6 +9,7 @@
     "lodash": "^4.17.19",
     "node-fetch": "^2.6.0",
     "node-telegram-bot-api": "^0.50.0",
+    "openweather-apis": "^4.3.1",
     "reboot": "^0.1.0"
   },
   "devDependencies": {

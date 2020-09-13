@@ -8,7 +8,6 @@ const sensor = require('ds18b20-raspi');
 const fs = require('fs');
 const SunCalc = require('suncalc');
 const Gpio = require('onoff').Gpio;
-//const fetch = require("node-fetch");
 const reboot = require('reboot');
 
 const rpisensor = config.get("sensors.rpi");
@@ -20,7 +19,6 @@ const key = config.get("key");
 
 const user_id = Object.values(config.get("user_id"));
 const al_id = config.get("user_id.al_id");
-// const al_id = 87307445;
 
 const latitude = config.get("sun.latitude")
 const longitude = config.get("sun.longitude")
@@ -32,6 +30,44 @@ const lampexit = new Gpio(18, 'out');//лампа вход
 const house = new Gpio(15, 'out');//обогрев дом
 const bot = new TelegramBot(token, {polling: true});
 
+/*weather*/
+var weather = require('openweather-apis');
+weather.setLang('ru');
+weather.setCity(city);
+weather.setUnits('metric');
+weather.setAPPID(key);
+
+function getWeather(id) {
+	weather.getWeatherForecastForDays(3, function(err, obj) {
+
+				if (err) {
+					bot.sendMessage(id,  "\u{1F97a} " + 'Что-то пошло не так!', {"reply_markup": keyboard_main})
+				}
+				//console.log(obj.list[0].temp)
+        //console.log(obj.list[0].weather);
+        //console.log(obj)
+        var msg_weather = 
+        	'Прогноз погоды :' + '\n' +
+        	'=================' + '\n';
+        for (var i = 0; i < obj.list.length; i++) {
+        	var date = new Date(obj.list[i].dt *1000);
+        	msg_weather = msg_weather +
+        		
+        		"\u{1F5d3} " + date.getDate() + '.' + (date.getMonth() + 1) + '.' + date.getFullYear() + '\n' +
+        		"\u{26c5} " + obj.list[i].weather[0].description + '\n' +
+        		"\u{1F319} " + 'ночью : ' + obj.list[i].temp.night + ' °C' + '\n' +
+        		"\u{2600} " + 'днем : ' + obj.list[i].temp.day + ' °C' + '\n' +
+        		'=================' + '\n' 
+        }
+
+        bot.sendMessage(id,  msg_weather, {"reply_markup": keyboard_main})
+
+    });
+
+}
+
+// getWeather(al_id)
+
 const keyboard_main = {"keyboard": [["\u{1F3E1}"+ " Дом", "\u{1F332}"+" Улица", "\u{2699}"]], resize_keyboard: true}
 const keyboard_lampexit_on= {"inline_keyboard": [
 		[{"text": "\u{1F4A1} " + "включить", "callback_data": "lampexit_on"}]
@@ -41,9 +77,18 @@ const keyboard_lampexit_off= {"inline_keyboard": [
 		[{"text": "\u{1F4A1} " + "выключить", "callback_data": "lampexit_off"}]
 	]}
 
+	const keyboard_lampexit_on_weather= {"inline_keyboard": [
+		[{"text": "\u{1F4A1} " + "включить", "callback_data": "lampexit_on"}],
+		[{"text": "\u{2602} " + "погода", "callback_data": "weather"}]
+	]}
+	
+const keyboard_lampexit_off_weather= {"inline_keyboard": [
+		[{"text": "\u{1F4A1} " + "выключить", "callback_data": "lampexit_off"}],
+		[{"text": "\u{2602} " + "погода", "callback_data": "weather"}]
+	]}
+
 const keyboard_house_on= {"inline_keyboard": [[{"text": "\u{2668} " + "включить", "callback_data": "house_on"}]]}
 const keyboard_house_off= {"inline_keyboard": [[{"text": "\u{2668} " + "выключить", "callback_data": "house_off"}]]}
-
 const keyboard_water_on = {"inline_keyboard": [
 													[{"text": "\u{2668} " + "включить обогрев", "callback_data": "heating_on"}],
 													[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
@@ -66,21 +111,7 @@ function salutation() {
 
 setTimeout(salutation, 60000);
 
-async function weather(id) {
-	//http://api.openweathermap.org/data/2.5/forecast/hourly?q=Irkutsk&appid=be87acba5a29f3aa93bd105c748ae943
-	let response = await fetch("http://api.openweathermap.org/data/2.5/forecast/hourly?q=" + city + "&appid=" + key, {metod: "post"});
-	// console.log(response.ok)
-	if (response.ok) {
-		let json = await response.json();
-		console.log(json);
-		//bot.sendMessage(id, json);
-	}
-	else {
-		console.log("oops");
-	}
-}
 
-//weather();
 let job_set;
 let job_rise;
 let times;
@@ -110,12 +141,14 @@ function sun() {
 }
 
 function sun_correction() {
-	let sun_day = new CronJob('0 0 * * * *', function() {
+	let sun_day = new CronJob('0 0 1 * * *', function() {
 		times = SunCalc.getTimes(new Date(), latitude, longitude, land);
 		sunrise_hours = times.dawn.getHours();
 		sunrise_min = times.dawn.getMinutes();
 		sunset_hours = times.dusk.getHours();
 		sunset_min = times.dusk.getMinutes();
+		bot.sendMessage(al_id, sunrise_hours + ':' + sunrise_min);
+		bot.sendMessage(al_id, sunset_hours + ':' + sunset_min);
 
 		let time_rise = new CronTime('0 ' + sunrise_min + ' ' + sunrise_hours + ' * * *');
 		job_rise.setTime(time_rise);
@@ -126,7 +159,6 @@ function sun_correction() {
 		job_set.start();
 	}, null, true, 'Asia/'+city);
 }
-
 
 function turn() {
 	(file.get("lampexit_state") === "0") ? lampexit.write(0):lampexit.write(1);
@@ -170,9 +202,6 @@ turn();
 sun();
 sun_correction();
 
-// bot.on("polling_error", (err) => console.log(err));
-// bot.on("polling_error", (err) => bot.sendMessage(al_id, err));
-
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, "Выбери нужный пункт: " + "\u{1F447}", {"reply_markup": keyboard_main});
 });
@@ -190,7 +219,7 @@ bot.on('message', (msg) => {
 				"=================" + "\n" +
 				"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
 				checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
-				{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off}
+				{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on_weather:keyboard_lampexit_off_weather}
 			);
 		}
 
@@ -292,7 +321,7 @@ bot.on("callback_query", (msg) => {
 	if (answer_ls.includes(("lampexit"))) {
 		bot.sendMessage(id, 
 			toggleGpio(lampexit, "Освещение на улице", "lampexit_state"), 
-			{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on:keyboard_lampexit_off});
+			{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on_weather:keyboard_lampexit_off_weather});
 	}
 
 	if (answer_ls.includes(("house"))) {
@@ -307,6 +336,10 @@ bot.on("callback_query", (msg) => {
 			toggleGpio(heatingrpi, "Обогрев щита", "heatingrpi_state"),
 			{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off}
 		);
+	}
+
+	if (answer_ls.includes(("weather"))) {
+		getWeather(id);
 	}
 
 	if (answer.includes('counter')) {
