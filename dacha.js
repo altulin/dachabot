@@ -16,6 +16,8 @@ const housesensor = config.get("sensors.house");
 const token = config.get("token");
 const city = config.get("city");
 const key = config.get("key");
+const addr = config.get("addr"); 
+const name = config.get("name");
 
 const user_id = Object.values(config.get("user_id"));
 const al_id = config.get("user_id.al_id");
@@ -180,13 +182,13 @@ function toggleGpio(arg, name, namestate) {
 	let state
 	if (arg.readSync() === 0) {
 		arg.writeSync(1);
-		state = name + " вкл. ";
+		state = `${name} вкл.`;
 		record(namestate, 1);
 	}
 
 	else {
 		arg.writeSync(0);
-		state = name + " выкл.";
+		state = `${name} выкл.`;
 		record(namestate, 0)
 	}
 	return state;
@@ -194,7 +196,7 @@ function toggleGpio(arg, name, namestate) {
 
 function checkGpio(arg, name) {
 	var msg
-	(arg.readSync() === 0)?msg = name + " выкл.":msg = name + " вкл. ";
+	(arg.readSync() === 0)?msg = `${name} выкл.`:msg = `${name} вкл.`;
 	return msg;
 }
 
@@ -203,7 +205,7 @@ sun();
 sun_correction();
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, "Выбери нужный пункт: " + "\u{1F447}", {"reply_markup": keyboard_main});
+  bot.sendMessage(msg.chat.id, `Выбери нужный пункт: \u{1F447}`, {"reply_markup": keyboard_main});
 });
 
 bot.on('message', (msg) => {
@@ -215,10 +217,7 @@ bot.on('message', (msg) => {
   	if (text.includes("Улица")) {
 			bot.sendMessage(
 				chatId, 
-				"\u{1F332} " + "Улица" +"\n" +
-				"=================" + "\n" +
-				"\u{1F321} " + temp(streetsensor) + " °C" +  "\n" + 
-				checkGpio(lampexit, "\u{1F4A1} " + "освещение"), 
+				`\u{1F332} Улица \n================= \n\u{1F321} ${temp(streetsensor)} °C \n${checkGpio(lampexit, `\u{1F4A1} освещение`)}`, 
 				{"reply_markup": (lampexit.readSync() === 0)?keyboard_lampexit_on_weather:keyboard_lampexit_off_weather}
 			);
 		}
@@ -226,10 +225,7 @@ bot.on('message', (msg) => {
 		if (text.includes("Дом")) {
 			bot.sendMessage(
 				chatId, 
-				"\u{1F3E1} " + "Дом" + "\n" +
-				"=================" + "\n" +
-				"\u{1F321} " + temp(housesensor) + " °C" +  "\n" + 
-				checkGpio(house, "\u{2668} " + "отопление"),
+				`\u{1F3E1} Дом \n================= \n\u{1F321} ${temp(housesensor)} °C \n${checkGpio(house, `\u{2668} отопление`)}`,
 				{"reply_markup": (house.readSync() === 0)?keyboard_house_on:keyboard_house_off}
 			);
 		}
@@ -237,17 +233,13 @@ bot.on('message', (msg) => {
 		if (text.includes("\u{2699}")) {
 			bot.sendMessage(
 				chatId, 
-				"\u{2699} " + "RPi" + "\n" +
-				"=================" + "\n" +
-				"\u{1F321} " + temp(rpisensor)+" °C" + "\n" + 
-				"\u{1F4BB} " + temppi() +" °C" + "\n" +
-				checkGpio(heatingrpi, "\u{2668} " + "обогрев щита"),
+				`\u{2699} RPi \n================= \n\u{1F321} ${temp(rpisensor)} °C \n\u{1F4BB} ${temppi()} °C \n${checkGpio(heatingrpi, `\u{2668} обогрев щита`)}`,
 				{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off}
 			);
 		}
 
 		if (text ==='r') {
-			bot.sendMessage(chatId, 'Ок! Перезагружаюсь!', {"reply_markup": keyboard_main});
+			bot.sendMessage(chatId, `Ок! Перезагружаюсь!`, {"reply_markup": keyboard_main});
 			setTimeout(reboot.rebootImmediately, 60000);
 		}
 
@@ -256,19 +248,17 @@ bot.on('message', (msg) => {
 		}
 
 		if (msg.reply_to_message) {
-			if (msg.reply_to_message.text.includes("Передай показания ХВС ГВС через пробел")) {
+			if (msg.reply_to_message.text.includes(`Передай показания ХВС ГВС через пробел`)) {
 				if (text.split(' ').length === 2) {
+					const hvs = text.split(' ')[0];
+					const gvs = text.split(' ')[1];
 					bot.sendMessage(chatId, 
-						'Показания счетчиков' + "\n" +
-						config.get("addr") + "\n" +
-						config.get("name") + "\n" +
-						'ХВС: ' +  text.split(' ')[0] + "\n" +
-						'ГВС: ' + text.split(' ')[1],
+						`Показания счетчиков \n${addr} \n${name} \nХВС: ${hvs} \nГВС: ${gvs}` ,
 						{"reply_markup": keyboard_main})
 				}
 				
 				else {
-					bot.sendMessage(chatId, '\u{1f61b} ' + 'Попробуй ещё раз',
+					bot.sendMessage(chatId, `\u{1f61b} Попробуй ещё раз`,
 						{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off});
 				}
 			}
@@ -343,7 +333,7 @@ bot.on("callback_query", (msg) => {
 	}
 
 	if (answer.includes('counter')) {
-		bot.sendMessage(id, 'Передай показания ХВС ГВС через пробел', {"reply_markup": {force_reply: true}})
+		bot.sendMessage(id, `Передай показания ХВС ГВС через пробел`, {"reply_markup": {force_reply: true}})
 	}
 })
 
