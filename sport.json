@@ -1,0 +1,322 @@
+{
+	"legs": {
+		"Приседания с гантелями": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Наклонный жим ногами": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "6",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Разгибание ног в тренажере сидя": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"satellite": "Сгибание ног в тренажере лежа",
+			"weight": ""
+		},
+		"Сгибание ног в тренажере лежа": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "15",
+			"satellite": "Разгибание ног в тренажере сидя",
+			"weight": ""
+		},
+		"Сгибание одной ноги стоя": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"satellite": "Разгибание ног в тренажере сидя",
+			"weight": ""
+		},
+		"Сведение ног сидя": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "15",
+			"max_number": "25",
+			"weight": ""
+		},
+		"Разведение ног сидя": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "15",
+			"max_number": "25",
+			"satellite": "Подъемы на носки стоя",
+			"weight": ""
+		},
+		"Подъемы на носки стоя": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "25",
+			"satellite": "Разведение ног сидя",
+			"weight": ""
+		},
+		"Подъем на носок одной ноги стоя": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "12",
+			"max_number": "24",
+			"weight": ""
+		},
+		"Жим ногами в тренажере на икры": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "15",
+			"max_number": "25",
+			"weight": ""
+		},
+		"Разгибание голени сидя": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "15",
+			"max_number": "30",
+			"weight": ""
+		}
+	},
+
+	"back": {
+		"Подтягивания на перекладине прямым хватом": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"repeat": "3"
+		},
+		"Подтягивания на перекладине обратным хватом": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"repeat": "3"
+		},
+		"Тяга верхнего блока перед собой": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Тяга верхнего блока за шею": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "20",
+			"weight": ""
+		},
+		"Тяга верхнего блока узким хватом": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Тяга верхнего блока прямыми руками": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Тяга в блоке двумя руками к животу": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Тяга гантели одной рукой": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Вертикальная тяга": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": ""
+		},
+		"Шраги с гантелями": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": ""
+		}
+	},
+
+	"shoulders": {
+		"Жим штанги из-за головы сидя": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": "",
+			"note": "middle"
+		},
+		"Жим гантелей сидя": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": "",
+			"note": "middle"
+		},
+		"Подъемы гантелей в стороны": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": "",
+			"note": "middle"
+		},
+		"Подъем гантели в сторону одной рукой лежа на боку": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": "",
+			"note": "middle"
+		},
+		"Подъем одной руки в сторону с нижнего блока": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": "",
+			"note": "middle"
+		},
+		"Плечевая передняя протяжка": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "15",
+			"weight": "",
+			"note": "middle"
+		},
+		"Подъемы рук в стороны на тренажере": {
+			"order": "2",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": "",
+			"note": "middle"
+		},
+		"Жим штанги с груди сидя": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": "",
+			"note": "front"
+		},
+		"Жим Арнольда": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": "",
+			"note": "front"
+		},
+		"Подъемы гантелей вперед попеременно": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "20",
+			"weight": "",
+			"note": "front"
+		},
+		"Подъем одной руки вперед с нижнего блока стоя": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": "",
+			"note": "front"
+		},
+		"Подъемы штанги вперед": {
+			"order": "1",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "10",
+			"max_number": "20",
+			"weight": "",
+			"note": "front"
+		},
+		"Подъемы гантелей в стороны в наклоне вперед": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "15",
+			"weight": "",
+			"note": "back"
+		},
+		"Перекрестные махи руками назад с верхних блоков": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "20",
+			"weight": "",
+			"note": "back"
+		},
+		"Махи руками назад с рукоятками тренажера": {
+			"order": "3",
+			"min_range": "3",
+			"max_range": "4",
+			"min_number": "8",
+			"max_number": "20",
+			"weight": "",
+			"note": "back"
+		}
+	},
+	"chest": {
+
+	},
+	"triceps": {
+		"Разгибание рук с рукояткой верхнего блока хватом сверху": {
+			
+		}
+	}
+}

@@ -2,8 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const config = require('config');
 const editJsonFile = require("edit-json-file");
 const file = editJsonFile("values.json");
-var CronJob = require('cron').CronJob;
-var CronTime = require('cron').CronTime;
+const sport = editJsonFile(`sport.json`);
+let CronJob = require('cron').CronJob;
+let CronTime = require('cron').CronTime;
 const sensor = require('ds18b20-raspi');
 const fs = require('fs');
 const SunCalc = require('suncalc');
@@ -70,7 +71,8 @@ function getWeather(id) {
 
 // getWeather(al_id)
 
-const keyboard_main = {"keyboard": [["\u{1F3E1}"+ " Дом", "\u{1F332}"+" Улица", "\u{2699}"]], resize_keyboard: true}
+// const keyboard_main = {"keyboard": [["\u{1F3E1}"+ " Дом", "\u{1F332}"+" Улица", "\u{2699}"]], resize_keyboard: true}
+const keyboard_main = {"keyboard": [["\u{1F3E1}"+ " Дом", "\u{1F332}"+" Улица", "\u{1f3cb}"]], resize_keyboard: true}
 const keyboard_lampexit_on= {"inline_keyboard": [
 		[{"text": "\u{1F4A1} " + "включить", "callback_data": "lampexit_on"}]
 	]}
@@ -89,17 +91,32 @@ const keyboard_lampexit_off_weather= {"inline_keyboard": [
 		[{"text": "\u{2602} " + "погода", "callback_data": "weather"}]
 	]}
 
-const keyboard_house_on= {"inline_keyboard": [[{"text": "\u{2668} " + "включить", "callback_data": "house_on"}]]}
-const keyboard_house_off= {"inline_keyboard": [[{"text": "\u{2668} " + "выключить", "callback_data": "house_off"}]]}
-const keyboard_water_on = {"inline_keyboard": [
-													[{"text": "\u{2668} " + "включить обогрев", "callback_data": "heating_on"}],
-													[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
-												]}
+const keyboard_house_on= {"inline_keyboard": [
+		[{"text": "\u{2668} " + "включить", "callback_data": "house_on"}],
+		[{"text": `\u{2699} \u{1f6e0} \u{1F321}`, "callback_data": "gear"}],
+		[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
+	]};
+const keyboard_house_off= {"inline_keyboard": [
+		[{"text": "\u{2668} " + "выключить", "callback_data": "house_off"}],
+		[{"text": `\u{2699} \u{1f6e0} \u{1F321}`, "callback_data": "gear"}],
+		[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
+	]}
 
-const keyboard_water_off = {"inline_keyboard": [
-													[{"text": "\u{2668} " + "выключить обогрев", "callback_data": "heating_off"}],
-													[{"text": "\u{1f55b} " + "счетчики", "callback_data": "counter"}]
-												]}
+const keyboard_heating_on = {"inline_keyboard": [
+		[{"text": "\u{2668} " + "включить обогрев", "callback_data": "heating_on"}]
+	]};
+
+const keyboard_heating_off = {"inline_keyboard": [
+		[{"text": "\u{2668} " + "выключить обогрев", "callback_data": "heating_off"}]
+	]};
+const keyboard_sport_start = {"inline_keyboard": [
+		[{"text": "\u{1f3cb} " + "Спина", "callback_data": "back_exercises"}],
+		[{"text": "\u{1f3cb} " + "Трицепс", "callback_data": "triceps_exercises"}],
+		[{"text": "\u{1f3cb} " + "Ноги", "callback_data": "legs_exercises"}],
+		[{"text": "\u{1f3cb} " + "Плечи", "callback_data": "shoulders_exercises"}],
+		[{"text": "\u{1f3cb} " + "Грудь", "callback_data": "chest_exercises"}],
+		[{"text": "\u{1f3cb} " + "Бицепс", "callback_data": "#"}]
+	]};
 
 function temppi() {
 	var temperature = fs.readFileSync("/sys/class/thermal/thermal_zone0/temp");
@@ -204,6 +221,29 @@ turn();
 sun();
 sun_correction();
 
+const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
+
+const getExercise = function (item, id) {
+	const array = sport.get(item)
+	const arrayKeys = Object.keys(array);
+	const firstExercises = [];
+	const secondExercises = [];
+	const firdExercises = [];
+	const message = [];
+	
+	arrayKeys.forEach (element =>  {
+		const order = array[element].order;
+		(order === `1`)?firstExercises.push(element): true;
+		(order === `2`)?secondExercises.push(element): true;
+		(order === `3`)?firdExercises.push(element): true;
+	});
+	message.push(getRandomItem(firstExercises));
+	message.push(getRandomItem(secondExercises));
+	message.push(getRandomItem(firdExercises));
+	message.forEach((element, i) => {bot.sendMessage(id, `${i+1}. ${element}`, {"reply_markup": keyboard_main})});
+	return;
+};
+
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, `Выбери нужный пункт: \u{1F447}`, {"reply_markup": keyboard_main});
 });
@@ -230,11 +270,11 @@ bot.on('message', (msg) => {
 			);
 		}
 
-		if (text.includes("\u{2699}")) {
+		if (text.includes("\u{1f3cb}")) {
 			bot.sendMessage(
 				chatId, 
-				`\u{2699} RPi \n================= \n\u{1F321} ${temp(rpisensor)} °C \n\u{1F4BB} ${temppi()} °C \n${checkGpio(heatingrpi, `\u{2668} обогрев щита`)}`,
-				{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off}
+				`Что сегодня делаем?`,
+				{"reply_markup": keyboard_sport_start}
 			);
 		}
 
@@ -305,7 +345,7 @@ bot.on('message', (msg) => {
 
 bot.on("callback_query", (msg) => {
 	let id  = msg.from.id;
-	let answer = msg.data
+	let answer = msg.data;
 	let answer_ls = answer.split("_");
 
 	if (answer_ls.includes(("lampexit"))) {
@@ -324,7 +364,7 @@ bot.on("callback_query", (msg) => {
 	if (answer_ls.includes(("heating"))) {
 		bot.sendMessage(id, 
 			toggleGpio(heatingrpi, "Обогрев щита", "heatingrpi_state"),
-			{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_water_on:keyboard_water_off}
+			{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_heating_on:keyboard_heating_off}
 		);
 	}
 
@@ -333,9 +373,20 @@ bot.on("callback_query", (msg) => {
 	}
 
 	if (answer.includes('counter')) {
-		bot.sendMessage(id, `Передай показания ХВС ГВС через пробел`, {"reply_markup": {force_reply: true}})
+		bot.sendMessage(id, `Передай показания ХВС ГВС через пробел`, {"reply_markup": {force_reply: true}});
 	}
-})
+
+	if (answer_ls.includes('gear')) {
+		bot.sendMessage(id,
+			`\u{2699} RPi \n================= \n\u{1F321} ${temp(rpisensor)} °C \n\u{1F4BB} ${temppi()} °C \n${checkGpio(heatingrpi, `\u{2668} обогрев щита`)}`,
+				{"reply_markup": (heatingrpi.readSync() === 0)?keyboard_heating_on:keyboard_heating_off});
+	}
+
+	if (answer_ls.includes(`exercises`)) {
+		getExercise(answer_ls[0], id);
+	}
+	
+});
 
 
 
